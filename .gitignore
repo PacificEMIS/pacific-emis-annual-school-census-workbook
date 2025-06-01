@@ -131,6 +131,9 @@ dmypy.json
 # Misc
 # Do not store data
 data/
+cached-data/
 # Only commit config.json when there are major changes
 # otherwise ignore
-config.json
+#config.json
+
+

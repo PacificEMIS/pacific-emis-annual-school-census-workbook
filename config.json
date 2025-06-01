@@ -1,0 +1,16 @@
+{
+    "sqlserver_name": "SERVERNAME",
+    "sqlserver_db": "DB",
+    "sqlserver_ip": "localhost",
+    "sqlserver_port": "1433",
+    "sqlserver_user": "sa",
+    "sqlserver_pwd": "password",
+    "base_url": "https://localhost:44301",
+    "username": "opendata@pacific-emis.org",
+    "password": "password",
+    "output_directory": "H:\\path\\to\\file",
+    "source_workbook_filename": "SY2024-25 Roster.xlsx",
+    "census_workbook_filename": "filename.xlsm",
+    "clean_census_workbook_filename": "All Schools 20250529 BOY SY2024-2025-clean.xlsm",
+    "empty_census_workbook_filename": "All Schools 20250529 BOY SY2024-2025.xlsm"    
+}
