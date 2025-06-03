@@ -105,6 +105,56 @@ df_enrolments = pd.read_sql_query(query, engine)
 df_enrolments.head()
 
 # %%
-df_enrolments.columns
+# Define your SQL query
+query = """
+WITH RankedTeachers AS (
+    SELECT 
+        TI.[tID],
+        [tRegister],
+        [tPayroll],
+        [tDOB],
+        [tDOBEst],
+        [tSex],
+        [tGiven],
+        [tMiddleNames],
+        [tSurname],
+        [tGivenSoundex],
+        [tSurnameSoundex],
+        [tDatePSAppointed],
+        [tDatePSClosed],
+        [tCloseReason],
+        [tchsID],
+        TS.[ssID],
+        [tchSalary],
+        [tchCitizenship],
+        [tchSponsor],
+        [tchEdQual] AS [EdQualCode],
+        TQ.codeDescription AS [EdQual],
+        [tchQual] AS [QualCode],
+        TQ2.codeDescription AS [Qual],
+        [tchRole],
+        [tchTAM],
+        TS.[tID] AS TS_tID,
+        SS.schNo,
+        SS.svyYear,
+        ROW_NUMBER() OVER (PARTITION BY TI.tID ORDER BY SS.svyYear DESC) AS rn
+    FROM [dbo].[TeacherIdentity] TI
+    INNER JOIN [dbo].[TeacherSurvey] TS ON TI.tID = TS.tID
+    INNER JOIN SchoolSurvey SS ON TS.ssID = SS.ssID
+    LEFT OUTER JOIN lkpTeacherQual TQ ON TS.[tchEdQual] = TQ.codeCode
+    LEFT OUTER JOIN lkpTeacherQual TQ2 ON TS.[tchQual] = TQ2.codeCode
+    WHERE TQ.codeDescription IS NOT NULL
+      AND TQ2.codeDescription IS NOT NULL
+)
 
-# %%
+SELECT *
+FROM RankedTeachers
+WHERE rn = 1;
+"""
+
+# Run the query and get the result in a DataFrame
+df_teacher_recent_survey_data = pd.read_sql_query(query, engine)
+# %store df_teacher_recent_survey_data
+
+# Preview the result
+df_teacher_recent_survey_data.head()
