@@ -27,11 +27,11 @@ def load_config(config_path="config.json"):
     """Load configuration from a JSON file."""
     with open(config_path, 'r') as file:
         config = json.load(file)
-    return config['output_directory'], config['source_workbook_filename'], config['empty_census_workbook_filename'], config['clean_census_workbook_filename']
+    return config['output_directory'], config['source_workbook_filename'], config['empty_census_workbook_filename'], config['clean_census_workbook_filename'], config['delete_census_workbook_filename']
     
 
 # Test loading configuration
-output_directory, source_workbook_filename, empty_census_workbook_filename, clean_census_workbook_filename = load_config()
+output_directory, source_workbook_filename, empty_census_workbook_filename, clean_census_workbook_filename, delete_census_workbook_filename = load_config()
 print("Configuration loaded successfully.")
 
 # Import some lookups
@@ -1621,20 +1621,22 @@ import pandas as pd
 new_workbook_path = os.path.join(output_directory, empty_census_workbook_filename)
 clean_workbook_path = os.path.join(output_directory, clean_census_workbook_filename)
 
-# Delete the previous version if it exists
-if os.path.exists(new_workbook_path):
-    try:
-        os.remove(new_workbook_path)
-        print(f"🗑️ Removed previous workbook: {new_workbook_path}")
-    except Exception as e:
-        raise RuntimeError(f"Failed to delete existing workbook: {new_workbook_path}\n{e}")
+# 🧹 Delete and copy clean workbook template (controlled by flag)
+if delete_census_workbook_filename:
+    if os.path.exists(new_workbook_path):
+        try:
+            os.remove(new_workbook_path)
+            print(f"🗑️ Removed previous workbook: {new_workbook_path}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to delete existing workbook: {new_workbook_path}\n{e}")
 
-# Copy the clean template
-try:
-    shutil.copyfile(clean_workbook_path, new_workbook_path)
-    print(f"📄 Copied clean template to: {new_workbook_path}")
-except Exception as e:
-    raise RuntimeError(f"Failed to copy clean workbook template.\n{e}")
+    try:
+        shutil.copyfile(clean_workbook_path, new_workbook_path)
+        print(f"📄 Copied clean template to: {new_workbook_path}")
+    except Exception as e:
+        raise RuntimeError(f"Failed to copy clean workbook template.\n{e}")
+else:
+    print("⚠️ Skipping deletion and copy of census workbook (using existing workbook).")
 
 # Mapping from cleaned dataframe to census workbook dataframe columns (edit as needed)
 column_mapping = {
@@ -1723,9 +1725,9 @@ try:
     invalid_columns = []
     
     for col_name, col_idx in header_indices.items():
-        col_values = df_to_insert[col_name].tolist()
         try:
             # Try writing one column vector at a time
+            col_values = df_to_insert[col_name].tolist()
             ws.range((start_row, col_idx), (start_row + num_rows - 1, col_idx)).value = [[v] for v in col_values]
         except Exception as e:
             print(f"❌ Error in column: {col_name} (Excel column {col_idx})")
@@ -1777,6 +1779,18 @@ df_to_insert_dupes2 = df[df.duplicated(dupe_keys_2, keep=False)].sort_values(by=
 # ✅ Summary
 print(f"🧾 Duplicates by National Student ID + Name + DOB: {df_to_insert_dupes1.shape[0]} rows in {df_to_insert_dupes1[dupe_keys_1].drop_duplicates().shape[0]} groups.")
 print(f"🧾 Duplicates by Name + DOB only: {df_to_insert_dupes2.shape[0]} rows in {df_to_insert_dupes2[dupe_keys_2].drop_duplicates().shape[0]} groups.")
+
+
+# %%
+# Define the output file name
+output_duplicates_path = new_workbook_path.replace(".xlsm", "-duplicate-students.xlsx")
+
+# Save both DataFrames into a new Excel workbook
+with pd.ExcelWriter(output_duplicates_path, engine='xlsxwriter') as writer:
+    df_to_insert_dupes1.to_excel(writer, sheet_name='Student Duplicates 1', index=False)
+    df_to_insert_dupes2.to_excel(writer, sheet_name='Student Duplicates 2', index=False)
+
+print(f"✅ Duplicate records written to: {output_duplicates_path}")
 
 
 # %%

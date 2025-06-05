@@ -39,8 +39,29 @@ import urllib3
 # Disable warnings for self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def authenticate(base_url, username, password):
-    """Authenticate and return a bearer token."""
+def logout(base_url, token):
+    """Call the logout endpoint if available."""
+    logout_url = f"{base_url}/"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/json"
+    }
+    try:
+        response = requests.post(logout_url, headers=headers, verify=False)
+        if response.status_code == 200:
+            print("Logged out successfully.")
+        else:
+            print(f"Logout attempt returned status {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"Logout failed: {e}")
+
+def authenticate(base_url, username, password, force_logout=False):
+    """Authenticate and return a bearer token, optionally logging out first."""
+    # Optional pre-logout with dummy token if available
+    if force_logout:
+        dummy_token = "maybe_an_old_token"  # or retrieve from cache/session
+        logout(base_url, dummy_token)
+
     auth_url = f"{base_url}/api/token"
     headers = {
         "Accept": "application/json, text/plain, */*",
@@ -53,12 +74,13 @@ def authenticate(base_url, username, password):
     }
     response = requests.post(auth_url, headers=headers, data=payload, verify=False)
     response.raise_for_status()
-    token = response.json().get("access_token")  # Adjust if necessary
+    token = response.json().get("access_token")
     return token
 
-# Test authentication
-token = authenticate(base_url, username, password)
+# Example usage
+token = authenticate(base_url, username, password, force_logout=True)
 print("Authentication successful. Token obtained.")
+
 
 # %%
 import requests
@@ -136,21 +158,27 @@ all_schools, school_info = fetch_paginated_collection(
 # %store all_teachers all_schools
 
 # %%
+import time
+import requests
+
 def get_lookups(base_url, token, lookup="core"):
-    """Fetch lookups from the core collection endpoint."""
-    url = f"{base_url}/api/lookups/collection/{lookup}"
+    """Fetch lookups from the core collection endpoint, printing the response status."""
+    # Add a timestamp to prevent caching if the backend allows it
+    url = f"{base_url}/api/lookups/collection/{lookup}?t={int(time.time())}"
     headers = {
         "Authorization": f"Bearer {token}",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "Cache-Control": "no-cache"  # May help prevent cached responses
     }
-    
+
     response = requests.get(url, headers=headers, verify=False)
+    print(f"GET {lookup} → Status: {response.status_code}")
     response.raise_for_status()
     
     lookups = response.json()
-    return lookups  # This will likely be a dict or list of dicts depending on API
+    return lookups
 
-# Retrieve and store the lookups
+# Retrieve and store the lookups freshly
 core_lookups = get_lookups(base_url, token, "core")
 student_lookups = get_lookups(base_url, token, "student")
 censusworkbook_lookups = get_lookups(base_url, token, "censusworkbook")
@@ -160,9 +188,11 @@ censusworkbook_lookups = get_lookups(base_url, token, "censusworkbook")
 # Optionally print keys or preview
 print("Available core lookup categories:", list(core_lookups.keys()) if isinstance(core_lookups, dict) else type(core_lookups))
 print("Available student lookup categories:", list(student_lookups.keys()) if isinstance(student_lookups, dict) else type(student_lookups))
-print("Available censusworkbook lookup categories:", list(censusworkbook_lookups.keys()) if isinstance(censusworkbook_lookups, dict) else type(census_lookups))
+print("Available censusworkbook lookup categories:", list(censusworkbook_lookups.keys()) if isinstance(censusworkbook_lookups, dict) else type(censusworkbook_lookups))
+
 
 # %%
-censusworkbook_lookups['schoolCodes']
+censusworkbook_lookups['teacherRegStatus']
 
 # %%
+all_teachers[:2]

@@ -12,5 +12,6 @@
     "source_workbook_filename": "SY2024-25 Roster.xlsx",
     "census_workbook_filename": "filename.xlsm",
     "clean_census_workbook_filename": "All Schools 20250529 BOY SY2024-2025-clean.xlsm",
-    "empty_census_workbook_filename": "All Schools 20250529 BOY SY2024-2025.xlsm"    
+    "empty_census_workbook_filename": "All Schools 20250529 BOY SY2024-2025.xlsm" ,
+    "delete_census_workbook_filename": true   
 }
